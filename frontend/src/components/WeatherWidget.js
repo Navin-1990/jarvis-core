@@ -5,6 +5,15 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 const WeatherWidget = memo(() => {
   const [weather, setWeather] = useState(null);
   const [locationError, setLocationError] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const fetchWeatherByCoords = async (lat, lon) => {
     try {
@@ -69,15 +78,48 @@ const WeatherWidget = memo(() => {
     return () => clearInterval(interval);
   }, []);
 
-  if (!weather || locationError) return null;
+  // Get time-based greeting
+  const getGreeting = () => {
+    const hour = currentTime.getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    if (hour < 21) return 'Good Evening';
+    return 'Good Night';
+  };
+
+  // Format time
+  const timeStr = currentTime.toLocaleTimeString('en-US', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: true 
+  });
+  
+  // Format date
+  const dateStr = currentTime.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
+  });
 
   return (
-    <div className="weather-widget">
-      <span className="weather-icon">🌤</span>
-      <div className="weather-info">
-        <span className="weather-city">{weather.city}</span>
-        <span className="weather-temp">{Math.round(weather.temp)}°C</span>
+    <div className="weather-widget-container">
+      {/* Time and Date */}
+      <div className="time-display">
+        <span className="time-greeting">{getGreeting()}</span>
+        <span className="time-value">{timeStr}</span>
+        <span className="date-value">{dateStr}</span>
       </div>
+      
+      {/* Weather */}
+      {weather && !locationError && (
+        <div className="weather-widget">
+          <span className="weather-icon">🌤</span>
+          <div className="weather-info">
+            <span className="weather-city">{weather.city}</span>
+            <span className="weather-temp">{Math.round(weather.temp)}°C</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 });

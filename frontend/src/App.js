@@ -22,8 +22,6 @@ function App() {
     assistant: { status: 'idle', logs: [], lastAction: '' },
     coding: { status: 'idle', logs: [], lastAction: '' },
     device: { status: 'idle', logs: [], lastAction: '' },
-    file: { status: 'idle', logs: [], lastAction: '' },
-    website: { status: 'idle', logs: [], lastAction: '' },
   });
   const [activeTerminals, setActiveTerminals] = useState([]);
   const [systemStatus, setSystemStatus] = useState(null);
@@ -313,14 +311,7 @@ function App() {
           <SystemArc status={systemStatus} connected={connected} />
         </div>
         <div className="header-right">
-          {/* Voice Assistant - mic button for voice input */}
-          <VoiceAssistant 
-            onCommand={handleVoiceCommand}
-            onSpeakingStateChange={handleSpeakingChange}
-            apiUrl={API_URL}
-            disabled={voiceMuted}
-          />
-          {/* Mute toggle button */}
+          {/* Mute toggle button - single voice control */}
           <button
             className={`voice-mute-btn ${voiceMuted ? 'muted' : ''}`}
             onClick={toggleVoiceMute}
@@ -331,7 +322,7 @@ function App() {
           </button>
           <div className={`neural-link ${connected ? 'active' : ''}`}>
             <div className="link-pulse" />
-            <span>{connected ? 'NEURAL LINK ACTIVE' : 'LINK OFFLINE'}</span>
+            <span>{connected ? 'LINK ACTIVE' : 'LINK OFFLINE'}</span>
           </div>
         </div>
       </header>
