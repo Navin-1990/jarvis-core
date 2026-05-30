@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
@@ -11,6 +11,22 @@ const MusicPlayer = ({ onClose }) => {
   const [currentPlaylist, setCurrentPlaylist] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const audioRef = useRef(null);
+  const playlistRef = useRef(null);
+
+  useEffect(() => {
+    // Fetch current playing track on mount
+    fetchNowPlaying();
+  }, []);
+
+  const fetchNowPlaying = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/music/now-playing`);
+      const data = await res.json();
+      if (data.track) {
+        setNowPlaying(data.track);
+      }
+    } catch {}
+  }, []);
 
   const search = async () => {
     if (!query.trim()) return;
@@ -94,78 +110,110 @@ const MusicPlayer = ({ onClose }) => {
   };
 
   return (
-    <div className="music-player-panel">
+    <div className="panel-card music-panel">
       <audio ref={audioRef} />
       
       {/* Header */}
-      <div className="music-header">
-        <span className="music-icon">🎵</span>
-        <span className="music-title">MUSIC PLAYER</span>
-        <button className="music-close" onClick={onClose}>×</button>
+      <div className="panel-header">
+        <span className="panel-icon">🎵</span>
+        <span className="panel-title">MUSIC PLAYER</span>
+        <button className="terminal-close" onClick={onClose}>×</button>
       </div>
       
       {/* Now Playing */}
       {nowPlaying && (
-        <div className="now-playing-section">
-          <div className="now-playing-thumb">
+        <div className="now-playing">
+          <div className="now-playing-header">NOW PLAYING</div>
+          <div className="now-playing-content">
             {nowPlaying.thumbnail && (
-              <img src={nowPlaying.thumbnail} alt="" />
+              <img src={nowPlaying.thumbnail} alt="" className="now-playing-thumb" />
             )}
-          </div>
-          <div className="now-playing-info">
-            <div className="now-playing-label">NOW PLAYING</div>
-            <div className="now-playing-name">{nowPlaying.title}</div>
-            <div className="now-playing-channel">{nowPlaying.channel}</div>
-            <div className="now-playing-controls">
-              <button onClick={playPrev} disabled={currentIndex <= 0}>⏮</button>
-              <button onClick={stop} className="stop-btn">⏹</button>
-              <button onClick={playNext} disabled={currentIndex >= currentPlaylist.length - 1}>⏭</button>
+            <div className="now-playing-info">
+              <div className="now-playing-title">{nowPlaying.title}</div>
+              {nowPlaying.channel && (
+                <div className="now-playing-artist">{nowPlaying.channel}</div>
+              )}
             </div>
+          </div>
+          <div className="now-playing-controls">
+            <button 
+              className="ctrl-btn" 
+              onClick={playPrev} 
+              disabled={currentIndex <= 0}
+              title="Previous"
+            >
+              ⏮
+            </button>
+            <button 
+              className="ctrl-btn danger" 
+              onClick={stop}
+              title="Stop"
+            >
+              ⏹
+            </button>
+            <button 
+              className="ctrl-btn" 
+              onClick={playNext} 
+              disabled={currentIndex >= currentPlaylist.length - 1}
+              title="Next"
+            >
+              ⏭
+            </button>
           </div>
         </div>
       )}
       
       {/* Search */}
-      <div className="music-search-bar">
+      <div className="music-search">
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Search songs (e.g., Alan Walker)"
+          placeholder="Search songs..."
+          className="music-input"
         />
-        <button onClick={search} disabled={searching}>
+        <button 
+          className="music-search-btn" 
+          onClick={search} 
+          disabled={searching}
+        >
           {searching ? '...' : '🔍'}
         </button>
       </div>
       
-      {/* Playlist */}
-      <div className="music-playlist">
+      {/* Playlist - Scrollable */}
+      <div className="panel-body music-playlist-container" ref={playlistRef}>
+        {loading && <div className="music-loading">Loading...</div>}
+        
         {results.length === 0 && !searching && (
           <div className="music-empty">
             <div className="empty-icon">🎶</div>
-            <div>Search for songs to play</div>
-            <div className="empty-hint">Try "Alan Walker" or "Imagine Dragons"</div>
+            <div>Search for songs</div>
+            <div className="empty-hint">e.g., "Alan Walker" or "Coldplay"</div>
           </div>
         )}
-        {results.map((item, index) => (
-          <div 
-            key={item.video_id} 
-            className={`music-track ${currentIndex === index ? 'active' : ''}`}
-            onClick={() => playSong(item, index)}
-          >
-            <div className="track-num">{index + 1}</div>
-            <img src={item.thumbnail} alt="" className="track-thumb" />
-            <div className="track-info">
-              <div className="track-name">{item.title}</div>
-              <div className="track-artist">{item.channel}</div>
-            </div>
-            <div className="track-play">▶</div>
+        
+        {results.length > 0 && (
+          <div className="music-results">
+            {results.map((item, index) => (
+              <div 
+                key={item.video_id} 
+                className={`music-item ${currentIndex === index ? 'active' : ''}`}
+                onClick={() => playSong(item, index)}
+              >
+                <div className="music-item-num">{index + 1}</div>
+                <img src={item.thumbnail} alt="" className="music-thumb" />
+                <div className="music-info">
+                  <div className="music-item-title">{item.title}</div>
+                  <div className="music-channel">{item.channel}</div>
+                </div>
+                <button className="play-btn">▶</button>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
-      
-      {loading && <div className="music-loading">Loading...</div>}
     </div>
   );
 };
