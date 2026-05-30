@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { memo } from 'react';
 
-const LogStream = ({ logs }) => {
+const LogStream = memo(({ logs }) => {
   return (
     <div className="log-stream">
       <div className="log-stream-header">SYSTEM LOG STREAM</div>
@@ -14,6 +14,7 @@ const LogStream = ({ logs }) => {
       ))}
     </div>
   );
-};
+});
 
+LogStream.displayName = 'LogStream';
 export default LogStream;

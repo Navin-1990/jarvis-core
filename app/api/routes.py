@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends, Header, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, WebSocket, WebSocketDisconnect
 
 from app.brain.orchestrator import Orchestrator
 from app.brain.task_manager import TaskManager
@@ -41,7 +41,7 @@ async def root():
         "name": "JARVIS CORE",
         "status": "online",
         "version": "2.0",
-        "agents": ["assistant", "coding", "device", "file", "website"],
+        "agents": ["assistant", "coding", "device", "media", "tasks"],
     }
 
 
@@ -285,8 +285,13 @@ async def toggle_alarm(alarm_id: int, enabled: bool = True, _: None = Depends(ve
 # ── Weather ──────────────────────────────────────────────
 
 @router.get("/weather")
-async def get_weather(city: str | None = None, _: None = Depends(verify_api_key)):
-    return weather_service.get_weather(city)
+async def get_weather(
+    city: str | None = None,
+    lat: float | None = None,
+    lon: float | None = None,
+    _: None = Depends(verify_api_key),
+):
+    return weather_service.get_weather(city, lat, lon)
 
 
 @router.get("/weather/forecast")
