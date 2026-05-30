@@ -311,15 +311,13 @@ function App() {
           <SystemArc status={systemStatus} connected={connected} />
         </div>
         <div className="header-right">
-          {/* Mute toggle button - single voice control */}
-          <button
-            className={`voice-mute-btn ${voiceMuted ? 'muted' : ''}`}
-            onClick={toggleVoiceMute}
-            title={voiceMuted ? 'Voice muted' : 'Voice enabled'}
-          >
-            <span className="mute-icon">{voiceMuted ? '🔇' : '🔊'}</span>
-            <span className="mute-label">{voiceMuted ? 'MUTED' : 'VOICE'}</span>
-          </button>
+          {/* Voice - Mic + Mute combined */}
+          <VoiceAssistant 
+            onCommand={handleVoiceCommand}
+            onSpeakingStateChange={handleSpeakingChange}
+            apiUrl={API_URL}
+            disabled={voiceMuted}
+          />
           <div className={`neural-link ${connected ? 'active' : ''}`}>
             <div className="link-pulse" />
             <span>{connected ? 'LINK ACTIVE' : 'LINK OFFLINE'}</span>

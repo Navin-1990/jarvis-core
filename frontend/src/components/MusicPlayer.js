@@ -1,17 +1,23 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
+// Default playlist to show on open
+const DEFAULT_PLAYLIST = [
+  { video_id: 'EJxqjFOrV54', title: 'Alan Walker - Faded', channel: 'Alan Walker', thumbnail: 'https://i.ytimg.com/vi/EJxqjFOrV54/default.jpg' },
+  { video_id: 'dy90tA3WW0k', title: 'The Weeknd - Blinding Lights', channel: 'TheWeeknd', thumbnail: 'https://i.ytimg.com/vi/dy90tA3WW0k/default.jpg' },
+  { video_id: 'JGwWNGJdvx8', title: 'Ed Sheeran - Shape of You', channel: 'Ed Sheeran', thumbnail: 'https://i.ytimg.com/vi/JGwWNGJdvx8/default.jpg' },
+  { video_id: 'kJQP7kiw5Fk', title: 'Luis Fonsi - Despacito', channel: 'Luis Fonsi', thumbnail: 'https://i.ytimg.com/vi/kJQP7kiw5Fk/default.jpg' },
+  { video_id: 'tgbNymZ7vqY', title: 'Journey - Separate Ways', channel: 'Journey', thumbnail: 'https://i.ytimg.com/vi/tgbNymZ7vqY/default.jpg' },
+];
+
 const MusicPlayer = ({ onClose }) => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState([]);
+  const [results, setResults] = useState(DEFAULT_PLAYLIST);
   const [nowPlaying, setNowPlaying] = useState(null);
   const [searching, setSearching] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [currentPlaylist, setCurrentPlaylist] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
-  const audioRef = useRef(null);
-  const playlistRef = useRef(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // Fetch current playing track on mount
@@ -25,11 +31,14 @@ const MusicPlayer = ({ onClose }) => {
       if (data.track) {
         setNowPlaying(data.track);
       }
-    } catch {}
+    } catch { /* ignore */ }
   }, []);
 
   const search = async () => {
-    if (!query.trim()) return;
+    if (!query.trim()) {
+      setResults(DEFAULT_PLAYLIST);
+      return;
+    }
     setSearching(true);
     try {
       const res = await fetch(`${API_URL}/music/search`, {
@@ -40,14 +49,15 @@ const MusicPlayer = ({ onClose }) => {
       const data = await res.json();
       if (data.results && data.results.length > 0) {
         setResults(data.results);
-        setCurrentPlaylist(data.results);
         setCurrentIndex(-1);
       } else {
-        setResults([]);
-        setCurrentPlaylist([]);
+        // Fallback to default if no results
+        setResults(DEFAULT_PLAYLIST);
       }
     } catch (e) {
       console.error('Search error:', e);
+      // Fallback to default on error
+      setResults(DEFAULT_PLAYLIST);
     }
     setSearching(false);
   };
@@ -65,12 +75,6 @@ const MusicPlayer = ({ onClose }) => {
       if (data.success && data.track) {
         setNowPlaying({ ...item, ...data.track });
         setCurrentIndex(index);
-        
-        // Try to play audio in browser if URL available
-        if (data.track.audio_url && audioRef.current) {
-          audioRef.current.src = data.track.audio_url;
-          audioRef.current.play().catch(() => {});
-        }
       }
     } catch (e) {
       console.error('Play error:', e);
@@ -79,14 +83,14 @@ const MusicPlayer = ({ onClose }) => {
   };
 
   const playNext = () => {
-    if (currentIndex < currentPlaylist.length - 1) {
-      playSong(currentPlaylist[currentIndex + 1], currentIndex + 1);
+    if (currentIndex < results.length - 1) {
+      playSong(results[currentIndex + 1], currentIndex + 1);
     }
   };
 
   const playPrev = () => {
     if (currentIndex > 0) {
-      playSong(currentPlaylist[currentIndex - 1], currentIndex - 1);
+      playSong(results[currentIndex - 1], currentIndex - 1);
     }
   };
 
@@ -96,10 +100,6 @@ const MusicPlayer = ({ onClose }) => {
     } catch {}
     setNowPlaying(null);
     setCurrentIndex(-1);
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = '';
-    }
   };
 
   const handleKeyDown = (e) => {
@@ -111,8 +111,6 @@ const MusicPlayer = ({ onClose }) => {
 
   return (
     <div className="panel-card music-panel">
-      <audio ref={audioRef} />
-      
       {/* Header */}
       <div className="panel-header">
         <span className="panel-icon">🎵</span>
@@ -154,7 +152,7 @@ const MusicPlayer = ({ onClose }) => {
             <button 
               className="ctrl-btn" 
               onClick={playNext} 
-              disabled={currentIndex >= currentPlaylist.length - 1}
+              disabled={currentIndex >= results.length - 1}
               title="Next"
             >
               ⏭
@@ -183,36 +181,24 @@ const MusicPlayer = ({ onClose }) => {
       </div>
       
       {/* Playlist - Scrollable */}
-      <div className="panel-body music-playlist-container" ref={playlistRef}>
+      <div className="panel-body music-playlist-container">
         {loading && <div className="music-loading">Loading...</div>}
         
-        {results.length === 0 && !searching && (
-          <div className="music-empty">
-            <div className="empty-icon">🎶</div>
-            <div>Search for songs</div>
-            <div className="empty-hint">e.g., "Alan Walker" or "Coldplay"</div>
+        {results.map((item, index) => (
+          <div 
+            key={item.video_id} 
+            className={`music-item ${currentIndex === index ? 'active' : ''}`}
+            onClick={() => playSong(item, index)}
+          >
+            <div className="music-item-num">{index + 1}</div>
+            <img src={item.thumbnail} alt="" className="music-thumb" />
+            <div className="music-info">
+              <div className="music-item-title">{item.title}</div>
+              <div className="music-channel">{item.channel}</div>
+            </div>
+            <button className="play-btn">▶</button>
           </div>
-        )}
-        
-        {results.length > 0 && (
-          <div className="music-results">
-            {results.map((item, index) => (
-              <div 
-                key={item.video_id} 
-                className={`music-item ${currentIndex === index ? 'active' : ''}`}
-                onClick={() => playSong(item, index)}
-              >
-                <div className="music-item-num">{index + 1}</div>
-                <img src={item.thumbnail} alt="" className="music-thumb" />
-                <div className="music-info">
-                  <div className="music-item-title">{item.title}</div>
-                  <div className="music-channel">{item.channel}</div>
-                </div>
-                <button className="play-btn">▶</button>
-              </div>
-            ))}
-          </div>
-        )}
+        ))}
       </div>
     </div>
   );
