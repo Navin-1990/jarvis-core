@@ -337,10 +337,12 @@ body {
 /* ── Terminal layer ────────────────────────────── */
 .terminal-layer {
   position: absolute;
-  inset: 0;
-  z-index: 20;
+  top: 20px;
+  left: 30px;
+  right: 30px;
+  bottom: 140px;
+  z-index: 5;
   pointer-events: none;
-  padding: 20px 30px;
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
