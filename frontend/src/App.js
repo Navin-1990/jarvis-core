@@ -10,6 +10,8 @@ import TVRemote from './components/TVRemote';
 import WeatherWidget from './components/WeatherWidget';
 import AlarmPanel from './components/AlarmPanel';
 import NotificationToast from './components/NotificationToast';
+import VoiceAssistant from './components/VoiceAssistant';
+import jarvisAudio from './components/JARVISAudio';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 const WS_URL = process.env.REACT_APP_WS_URL || 'ws://localhost:8000/ws';
@@ -33,7 +35,28 @@ function App() {
   const [showTV, setShowTV] = useState(false);
   const [showAlarms, setShowAlarms] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [voiceState, setVoiceState] = useState('idle');
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [audioInitialized, setAudioInitialized] = useState(false);
   const wsRef = useRef(null);
+
+  // Initialize audio on first user interaction
+  useEffect(() => {
+    const initAudio = () => {
+      if (!audioInitialized) {
+        jarvisAudio.init();
+        setAudioInitialized(true);
+        document.removeEventListener('click', initAudio);
+        document.removeEventListener('keydown', initAudio);
+      }
+    };
+    document.addEventListener('click', initAudio);
+    document.addEventListener('keydown', initAudio);
+    return () => {
+      document.removeEventListener('click', initAudio);
+      document.removeEventListener('keydown', initAudio);
+    };
+  }, [audioInitialized]);
 
   const addLog = useCallback((type, message, agent = '') => {
     const entry = {
@@ -57,17 +80,27 @@ function App() {
   const openTerminal = useCallback((agentName) => {
     setActiveTerminals(prev => {
       if (prev.includes(agentName)) return prev;
+      jarvisAudio.play('terminalOpen');
       return [...prev, agentName];
     });
   }, []);
 
   const closeTerminal = useCallback((agentName) => {
+    jarvisAudio.play('terminalClose');
     setActiveTerminals(prev => prev.filter(a => a !== agentName));
   }, []);
 
-  const addNotification = useCallback((type, message) => {
-    const n = { id: Date.now() + Math.random(), type, message };
+  const addNotification = useCallback((type, message, data = null) => {
+    const n = { id: Date.now() + Math.random(), type, message, data };
     setNotifications(prev => [n, ...prev].slice(0, 10));
+    
+    // Play notification sound
+    jarvisAudio.play('notification');
+    
+    // Speak reminder announcements
+    if (data?.announcement) {
+      jarvisAudio.speak(data.announcement);
+    }
   }, []);
 
   const dismissNotification = useCallback((id) => {
@@ -81,6 +114,7 @@ function App() {
 
       ws.onopen = () => {
         setConnected(true);
+        jarvisAudio.play('confirm');
         addLog('system', 'JARVIS Neural Link Established', '');
       };
 
@@ -94,12 +128,14 @@ function App() {
               ...prev,
               [data.agent]: { ...prev[data.agent], status: 'active', lastAction: data.message },
             }));
+            jarvisAudio.play('agentActivation');
             openTerminal(data.agent);
           } else if (data.type === 'agent_completed' && data.agent) {
             setAgents(prev => ({
               ...prev,
               [data.agent]: { ...prev[data.agent], status: 'completed', lastAction: data.message },
             }));
+            jarvisAudio.play('agentComplete');
             setTimeout(() => {
               setAgents(prev => ({
                 ...prev,
@@ -108,20 +144,29 @@ function App() {
             }, 5000);
             setTimeout(() => closeTerminal(data.agent), 8000);
           } else if (data.type === 'reminder_due') {
-            addNotification('reminder_due', data.message);
+            addNotification('reminder_due', data.message, data.data);
           } else if (data.type === 'alarm_triggered') {
+            jarvisAudio.play('alert');
             addNotification('alarm_triggered', data.message);
+          } else if (data.type === 'voice_started') {
+            setVoiceState('speaking');
+          } else if (data.type === 'voice_command') {
+            setVoiceState('processing');
           }
         } catch { /* ignore parse errors */ }
       };
 
       ws.onclose = () => {
         setConnected(false);
+        jarvisAudio.play('error');
         addLog('system', 'Neural Link Disconnected. Reconnecting...', '');
         setTimeout(connectWS, 3000);
       };
 
-      ws.onerror = () => ws.close();
+      ws.onerror = () => {
+        jarvisAudio.play('error');
+        ws.close();
+      };
     };
 
     connectWS();
@@ -141,7 +186,9 @@ function App() {
   const sendCommand = async (command) => {
     setProcessing(true);
     setResponse('');
+    setVoiceState('processing');
     addLog('command', command, 'user');
+    jarvisAudio.play('voiceStart');
 
     try {
       const res = await fetch(`${API_URL}/command`, {
@@ -152,9 +199,25 @@ function App() {
       const data = await res.json();
       setResponse(data.response || JSON.stringify(data));
       addLog('response', data.response || 'Done', data.agent || '');
+      
+      // Speak the response if voice is enabled
+      if (data.response && !voiceMuted) {
+        setVoiceState('speaking');
+        setIsSpeaking(true);
+        jarvisAudio.speak(data.response).then(() => {
+          setIsSpeaking(false);
+          setVoiceState('idle');
+        });
+      } else {
+        setVoiceState('idle');
+      }
+      
+      jarvisAudio.play('agentComplete');
     } catch (err) {
       setResponse('Connection error. Is JARVIS backend running?');
       addLog('error', err.message);
+      jarvisAudio.play('error');
+      jarvisAudio.speak('Connection error. Is JARVIS backend running?');
     }
     setProcessing(false);
   };
@@ -172,8 +235,40 @@ function App() {
       const res = await fetch(`${API_URL}/voice/toggle-mute`, { method: 'POST' });
       const data = await res.json();
       setVoiceMuted(data.muted);
+      if (data.muted) {
+        jarvisAudio.stopSpeaking();
+        jarvisAudio.speak('Voice muted, sir.');
+      } else {
+        jarvisAudio.speak('Voice enabled, sir.');
+      }
     } catch { /* ignore */ }
   };
+
+  // Handle voice command
+  const handleVoiceCommand = useCallback(async (command, data) => {
+    if (command) {
+      setProcessing(true);
+      setResponse(data?.response || '');
+      setVoiceState('idle');
+      
+      if (data?.response && !voiceMuted) {
+        setIsSpeaking(true);
+        setVoiceState('speaking');
+        jarvisAudio.speak(data.response).then(() => {
+          setIsSpeaking(false);
+          setVoiceState('idle');
+        });
+      }
+      
+      setProcessing(false);
+    }
+  }, [voiceMuted]);
+
+  // Handle speaking state change
+  const handleSpeakingChange = useCallback((speaking) => {
+    setIsSpeaking(speaking);
+    setVoiceState(speaking ? 'speaking' : 'idle');
+  }, []);
 
   return (
     <div className="jarvis-cinematic">
@@ -202,7 +297,12 @@ function App() {
       {/* Header */}
       <header className="hud-header">
         <div className="header-left">
-          <HolographicHUD processing={processing} />
+          <HolographicHUD 
+            processing={processing} 
+            speaking={isSpeaking}
+            listening={voiceState === 'listening'}
+            size={80}
+          />
           <div className="brand">
             <h1>J.A.R.V.I.S.</h1>
             <span className="tagline">ADVANCED AI OPERATING SYSTEM</span>
@@ -213,12 +313,18 @@ function App() {
           <SystemArc status={systemStatus} connected={connected} />
         </div>
         <div className="header-right">
+          <VoiceAssistant 
+            onCommand={handleVoiceCommand}
+            onSpeakingStateChange={handleSpeakingChange}
+            apiUrl={API_URL}
+            disabled={voiceMuted}
+          />
           <button
             className={`voice-mute-btn ${voiceMuted ? 'muted' : ''}`}
             onClick={toggleVoiceMute}
             title={voiceMuted ? 'Voice muted' : 'Voice enabled'}
           >
-            <span className="mute-icon">{voiceMuted ? '\u{1F507}' : '\u{1F50A}'}</span>
+            <span className="mute-icon">{voiceMuted ? '🔇' : '🔊'}</span>
             <span className="mute-label">{voiceMuted ? 'MUTED' : 'VOICE'}</span>
           </button>
           <div className={`neural-link ${connected ? 'active' : ''}`}>
@@ -274,11 +380,13 @@ function App() {
       <div className="workspace">
         {/* Floating agent terminals */}
         <div className="terminal-layer">
-          {activeTerminals.map((agentName) => (
+          {activeTerminals.map((agentName, index) => (
             <AgentTerminal
               key={agentName}
               name={agentName}
               info={agents[agentName]}
+              index={index}
+              total={activeTerminals.length}
               onClose={() => closeTerminal(agentName)}
             />
           ))}
@@ -288,16 +396,25 @@ function App() {
           {showAlarms && <AlarmPanel onClose={() => setShowAlarms(false)} />}
         </div>
 
-        {/* Central response area */}
+        {/* Central Arc Reactor Display */}
         <div className="center-stage">
-          <div className="response-hologram">
-            <div className="hologram-border top-left" />
-            <div className="hologram-border top-right" />
-            <div className="hologram-border bottom-left" />
-            <div className="hologram-border bottom-right" />
-            <div className="response-label">JARVIS OUTPUT</div>
-            <div className="response-text">
-              {response || 'Systems nominal. Awaiting your command, sir.'}
+          <div className="arc-reactor-container">
+            <HolographicHUD 
+              processing={processing} 
+              speaking={isSpeaking}
+              listening={voiceState === 'listening'}
+              size={300}
+            />
+            
+            <div className="response-hologram">
+              <div className="hologram-border top-left" />
+              <div className="hologram-border top-right" />
+              <div className="hologram-border bottom-left" />
+              <div className="hologram-border bottom-right" />
+              <div className="response-label">JARVIS OUTPUT</div>
+              <div className="response-text">
+                {response || 'Systems nominal. Awaiting your command, sir.'}
+              </div>
             </div>
           </div>
         </div>
