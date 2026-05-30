@@ -310,13 +310,6 @@ function App() {
           <WeatherWidget />
         </div>
         <div className="header-right">
-          {/* Voice - Mic + Mute */}
-          <VoiceAssistant 
-            onCommand={handleVoiceCommand}
-            onSpeakingStateChange={handleSpeakingChange}
-            apiUrl={API_URL}
-            disabled={voiceMuted}
-          />
           <button
             className={`voice-mute-btn ${voiceMuted ? 'muted' : ''}`}
             onClick={toggleVoiceMute}
@@ -374,20 +367,35 @@ function App() {
         </div>
       </div>
 
-      {/* Main workspace */}
+      {/* Main workspace - Arc watermark with agents on top */}
       <div className="jarvis-workspace">
-        {/* Arc Reactor - Center of workspace */}
-        <div className="center-stage">
-          <HolographicHUD 
-            processing={processing} 
-            speaking={isSpeaking}
-            listening={voiceState === 'listening'}
-            size={240}
-          />
+        {/* Arc Reactor - Watermark behind */}
+        <HolographicHUD 
+          processing={processing} 
+          speaking={isSpeaking}
+          listening={voiceState === 'listening'}
+          size={200}
+        />
+        
+        {/* Agent/Feature content overlaid */}
+        <div className="workspace-content">
+          {activeTerminals.map((agentName, index) => (
+            <AgentTerminal
+              key={agentName}
+              name={agentName}
+              info={agents[agentName]}
+              index={index}
+              total={activeTerminals.length}
+              onClose={() => closeTerminal(agentName)}
+            />
+          ))}
+          {showMusic && <MusicPlayer onClose={() => setShowMusic(false)} />}
+          {showTV && <TVRemote onClose={() => setShowTV(false)} />}
+          {showAlarms && <AlarmPanel onClose={() => setShowAlarms(false)} />}
         </div>
       </div>
 
-      {/* JARVIS Output - Simple footer */}
+      {/* JARVIS Output - Above Command */}
       <div className="jarvis-output-bar">
         <div className="output-text">
           {response || 'Systems nominal. Awaiting your command, sir.'}
@@ -395,7 +403,7 @@ function App() {
       </div>
 
       {/* Command input - bottom */}
-      <CommandOrb onSend={sendCommand} processing={processing} />
+      <CommandOrb onSend={sendCommand} processing={processing} onVoiceCommand={handleVoiceCommand} />
     </div>
   );
 }
