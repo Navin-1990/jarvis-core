@@ -2730,3 +2730,32 @@ body {
 
 .header-right .mute-icon { font-size: 16px; }
 .header-right .mute-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; }
+
+/* ── Workspace - Full Screen Arc Reactor ─────── */
+.jarvis-workspace {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.center-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Output Bar - Simple Footer ──────────────── */
+.jarvis-output-bar {
+  padding: 12px 24px;
+  background: rgba(0, 15, 30, 0.9);
+  border-top: 1px solid var(--border);
+}
+
+.jarvis-output-bar .output-text {
+  font-size: 15px;
+  color: var(--text-bright);
+  text-align: center;
+}

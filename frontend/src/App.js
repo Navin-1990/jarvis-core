@@ -374,45 +374,25 @@ function App() {
         </div>
       </div>
 
-      {/* Main workspace - Full Width */}
+      {/* Main workspace */}
       <div className="jarvis-workspace">
-        {/* Arc Reactor - Center */}
-        <div className="arc-reactor-section">
+        {/* Arc Reactor - Center of workspace */}
+        <div className="center-stage">
           <HolographicHUD 
             processing={processing} 
             speaking={isSpeaking}
             listening={voiceState === 'listening'}
-            size={200}
+            size={240}
           />
         </div>
       </div>
 
-      {/* JARVIS Output - Full Width Bottom */}
+      {/* JARVIS Output - Simple footer */}
       <div className="jarvis-output-bar">
-        <div className="output-label">JARVIS OUTPUT</div>
         <div className="output-text">
           {response || 'Systems nominal. Awaiting your command, sir.'}
         </div>
       </div>
-
-      {/* Right Panel - Music Only */}
-      <aside className="panel-right">
-        <div className="terminal-layer">
-          {activeTerminals.map((agentName, index) => (
-            <AgentTerminal
-              key={agentName}
-              name={agentName}
-              info={agents[agentName]}
-              index={index}
-              total={activeTerminals.length}
-              onClose={() => closeTerminal(agentName)}
-            />
-          ))}
-          {showMusic && <MusicPlayer onClose={() => setShowMusic(false)} />}
-          {showTV && <TVRemote onClose={() => setShowTV(false)} />}
-          {showAlarms && <AlarmPanel onClose={() => setShowAlarms(false)} />}
-        </div>
-      </aside>
 
       {/* Command input - bottom */}
       <CommandOrb onSend={sendCommand} processing={processing} />
