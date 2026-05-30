@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
@@ -7,19 +7,25 @@ const MusicPlayer = ({ onClose }) => {
   const [results, setResults] = useState([]);
   const [nowPlaying, setNowPlaying] = useState(null);
   const [searching, setSearching] = useState(false);
+  const [loadingAudio, setLoadingAudio] = useState(false);
+  const [showEmbed, setShowEmbed] = useState(false);
+  const audioRef = useRef(null);
 
   const fetchNowPlaying = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/music/now-playing`);
       const data = await res.json();
-      setNowPlaying(data.track);
+      if (data.track) {
+        setNowPlaying(data.track);
+        if (data.track.embed_url && !data.track.audio_url) {
+          setShowEmbed(true);
+        }
+      }
     } catch { /* ignore */ }
   }, []);
 
   useEffect(() => {
     fetchNowPlaying();
-    const interval = setInterval(fetchNowPlaying, 5000);
-    return () => clearInterval(interval);
   }, [fetchNowPlaying]);
 
   const search = async () => {
@@ -38,68 +44,148 @@ const MusicPlayer = ({ onClose }) => {
   };
 
   const play = async (item) => {
+    setLoadingAudio(true);
+    setShowEmbed(false);
     try {
-      await fetch(`${API_URL}/music/play`, {
+      const res = await fetch(`${API_URL}/music/play`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ video_id: item.video_id, title: item.title }),
       });
-      setNowPlaying({ title: item.title, status: 'playing', video_id: item.video_id });
-    } catch { /* ignore */ }
+      const data = await res.json();
+      
+      if (data.success && data.track) {
+        const trackData = {
+          ...data.track,
+          thumbnail: item.thumbnail,
+          channel: item.channel
+        };
+        setNowPlaying(trackData);
+        
+        // If we have audio URL, play in browser
+        if (data.track.audio_url && audioRef.current) {
+          audioRef.current.src = data.track.audio_url;
+          audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+        }
+        // If we have embed URL, show embedded player
+        else if (data.track.embed_url) {
+          setShowEmbed(true);
+        }
+      } else {
+        console.log('Playback failed:', data.message);
+      }
+    } catch (err) {
+      console.log('Play error:', err);
+    }
+    setLoadingAudio(false);
   };
 
   const control = async (action) => {
     try {
       await fetch(`${API_URL}/music/${action}`, { method: 'POST' });
-      if (action === 'stop') setNowPlaying(null);
-      else if (action === 'pause' && nowPlaying) setNowPlaying({ ...nowPlaying, status: 'paused' });
-      else if (action === 'resume' && nowPlaying) setNowPlaying({ ...nowPlaying, status: 'playing' });
+      if (action === 'stop') {
+        setNowPlaying(null);
+        setShowEmbed(false);
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.src = '';
+        }
+      }
+      else if (action === 'pause' && audioRef.current) {
+        audioRef.current.pause();
+        if (nowPlaying) setNowPlaying({ ...nowPlaying, status: 'paused' });
+      }
+      else if (action === 'resume' && audioRef.current) {
+        audioRef.current.play();
+        if (nowPlaying) setNowPlaying({ ...nowPlaying, status: 'playing' });
+      }
     } catch { /* ignore */ }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      search();
+    }
   };
 
   return (
     <div className="panel-card music-panel">
+      {/* Hidden audio element for playback */}
+      <audio ref={audioRef} />
+      
       <div className="panel-header">
-        <span className="panel-icon">&#9835;</span>
+        <span className="panel-icon">🎵</span>
         <span className="panel-title">MUSIC PLAYER</span>
-        <button className="terminal-close" onClick={onClose}>x</button>
+        <button className="terminal-close" onClick={onClose}>×</button>
       </div>
       <div className="panel-body">
-        {nowPlaying && (
+        {/* YouTube Embed Player */}
+        {showEmbed && nowPlaying && nowPlaying.embed_url && (
+          <div className="youtube-embed">
+            <iframe
+              src={nowPlaying.embed_url}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title="YouTube Player"
+            />
+          </div>
+        )}
+
+        {/* Now Playing */}
+        {nowPlaying && !showEmbed && (
           <div className="now-playing">
             <div className="np-label">NOW PLAYING</div>
+            {nowPlaying.thumbnail && (
+              <img src={nowPlaying.thumbnail} alt="" className="np-thumb" />
+            )}
             <div className="np-title">{nowPlaying.title}</div>
+            {nowPlaying.channel && (
+              <div className="np-channel">{nowPlaying.channel}</div>
+            )}
             <div className="np-controls">
-              {nowPlaying.status === 'playing' ? (
-                <button className="ctrl-btn" onClick={() => control('pause')}>&#10074;&#10074;</button>
+              {loadingAudio ? (
+                <span className="loading-text">Loading...</span>
+              ) : nowPlaying.status === 'playing' ? (
+                <button className="ctrl-btn" onClick={() => control('pause')} title="Pause">⏸</button>
               ) : (
-                <button className="ctrl-btn" onClick={() => control('resume')}>&#9654;</button>
+                <button className="ctrl-btn" onClick={() => control('resume')} title="Play">▶</button>
               )}
-              <button className="ctrl-btn danger" onClick={() => control('stop')}>&#9632;</button>
+              <button className="ctrl-btn danger" onClick={() => control('stop')} title="Stop">⏹</button>
             </div>
           </div>
         )}
-        <form className="music-search" onSubmit={(e) => { e.preventDefault(); search(); }}>
+        
+        {/* Search */}
+        <div className="music-search">
           <input
             className="music-input"
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search music..."
+            onKeyDown={handleKeyDown}
+            placeholder="Search songs... (e.g., Alan Walker)"
           />
-          <button className="music-search-btn" type="submit" disabled={searching}>
-            {searching ? '...' : 'SEARCH'}
+          <button className="music-search-btn" onClick={search} disabled={searching}>
+            {searching ? '...' : '🔍'}
           </button>
-        </form>
+        </div>
+        
+        {/* Results */}
         <div className="music-results">
-          {results.map((item) => (
+          {results.length === 0 && query && !searching && (
+            <div className="music-empty">No results found</div>
+          )}
+          {results.map((item, index) => (
             <div key={item.video_id} className="music-item" onClick={() => play(item)}>
+              <div className="music-index">{index + 1}</div>
               <img src={item.thumbnail} alt="" className="music-thumb" />
               <div className="music-info">
                 <div className="music-item-title">{item.title}</div>
                 <div className="music-channel">{item.channel}</div>
               </div>
-              <button className="play-btn">&#9654;</button>
+              <button className="play-btn">▶</button>
             </div>
           ))}
         </div>

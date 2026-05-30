@@ -18,11 +18,11 @@ def search_youtube(query: str) -> dict | None:
         "part": "snippet",
         "q": query,
         "type": "video",
-        "maxResults": 5,
+        "maxResults": 10,
         "key": api_key,
     }
     try:
-        resp = requests.get(base_url, params=params, timeout=10)
+        resp = requests.get(base_url, params=params, timeout=15)
         resp.raise_for_status()
         data = resp.json()
         items = data.get("items", [])
@@ -39,7 +39,7 @@ def search_youtube(query: str) -> dict | None:
         return None
 
 
-def search_youtube_list(query: str, max_results: int = 5) -> list[dict]:
+def search_youtube_list(query: str, max_results: int = 10) -> list[dict]:
     api_key = settings.YOUTUBE_API_KEY
     if not api_key:
         return []
@@ -53,7 +53,7 @@ def search_youtube_list(query: str, max_results: int = 5) -> list[dict]:
         "key": api_key,
     }
     try:
-        resp = requests.get(base_url, params=params, timeout=10)
+        resp = requests.get(base_url, params=params, timeout=15)
         resp.raise_for_status()
         data = resp.json()
         results = []
@@ -63,9 +63,11 @@ def search_youtube_list(query: str, max_results: int = 5) -> list[dict]:
                 "title": item["snippet"]["title"],
                 "channel": item["snippet"]["channelTitle"],
                 "thumbnail": item["snippet"]["thumbnails"]["default"]["url"],
+                "duration": item.get("contentDetails", {}).get("duration", ""),
             })
         return results
-    except Exception:
+    except Exception as e:
+        print(f"YouTube search error: {e}")
         return []
 
 
@@ -75,12 +77,20 @@ def get_audio_url(video_id: str) -> str | None:
         "format": "bestaudio/best",
         "extractaudio": True,
         "quiet": True,
+        "nocheckcertificate": True,
     }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=False)
-            return info.get("url")
-    except Exception:
+            if info and info.get("url"):
+                return info.get("url")
+            # Try to get from formats
+            for f in info.get("formats", []):
+                if f.get("ext") in ["m4a", "mp3", "webm"] and f.get("url"):
+                    return f["url"]
+            return info.get("url") if info else None
+    except Exception as e:
+        print(f"Audio extraction error: {e}")
         return None
 
 
@@ -89,22 +99,40 @@ def play_track(video_id: str, title: str = "") -> dict:
 
     audio_url = get_audio_url(video_id)
     if not audio_url:
-        return {"success": False, "message": "Could not extract audio URL"}
+        # Return with YouTube embed URL as fallback for browser playback
+        _current_track = {
+            "video_id": video_id,
+            "title": title,
+            "status": "playing",
+            "audio_url": None,
+            "embed_url": f"https://www.youtube.com/embed/{video_id}?autoplay=1",
+        }
+        return {
+            "success": True,
+            "message": f"Playing: {title}",
+            "track": _current_track,
+            "note": "Using YouTube embed for playback",
+        }
 
     try:
         import vlc
         if _current_player:
-            _current_player.stop()
+            try:
+                _current_player.stop()
+            except:
+                pass
         instance = vlc.MediaPlayer(audio_url)
         _current_player = instance
         _current_track = {
             "video_id": video_id,
             "title": title,
             "status": "playing",
+            "audio_url": audio_url,
         }
         instance.play()
         return {"success": True, "message": f"Now playing: {title}", "track": _current_track}
     except ImportError:
+        # VLC not available - return audio URL for browser playback
         _current_track = {
             "video_id": video_id,
             "title": title,
@@ -113,12 +141,23 @@ def play_track(video_id: str, title: str = "") -> dict:
         }
         return {
             "success": True,
-            "message": f"Now playing: {title}",
+            "message": f"Playing: {title}",
             "track": _current_track,
-            "note": "VLC not installed - audio URL provided for frontend playback",
         }
     except Exception as e:
-        return {"success": False, "message": f"Playback error: {e}"}
+        # Fallback to browser playback
+        _current_track = {
+            "video_id": video_id,
+            "title": title,
+            "status": "playing",
+            "audio_url": audio_url,
+        }
+        return {
+            "success": True,
+            "message": f"Playing: {title}",
+            "track": _current_track,
+            "error": str(e),
+        }
 
 
 def stop_music() -> dict:
@@ -143,6 +182,9 @@ def pause_music() -> dict:
             return {"success": True, "message": "Music paused"}
         except Exception:
             pass
+    if _current_track:
+        _current_track["status"] = "paused"
+        return {"success": True, "message": "Music paused"}
     return {"success": False, "message": "No music playing"}
 
 
@@ -156,6 +198,9 @@ def resume_music() -> dict:
             return {"success": True, "message": "Music resumed"}
         except Exception:
             pass
+    if _current_track:
+        _current_track["status"] = "playing"
+        return {"success": True, "message": "Music resumed"}
     return {"success": False, "message": "No music to resume"}
 
 
