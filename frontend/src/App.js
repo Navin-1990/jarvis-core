@@ -367,36 +367,32 @@ function App() {
         </div>
       </div>
 
-      {/* Main workspace */}
+      {/* Main workspace - Arc watermark with agents on top */}
       <div className="jarvis-workspace">
-        {/* Arc Reactor - Center */}
-        <div className="center-stage">
-          <HolographicHUD 
-            processing={processing} 
-            speaking={isSpeaking}
-            listening={voiceState === 'listening'}
-            size={240}
-          />
+        {/* Arc Reactor - Watermark behind */}
+        <HolographicHUD 
+          processing={processing} 
+          speaking={isSpeaking}
+          listening={voiceState === 'listening'}
+          size={200}
+        />
+        
+        {/* Agent/Feature content overlaid */}
+        <div className="workspace-content">
+          {activeTerminals.map((agentName, index) => (
+            <AgentTerminal
+              key={agentName}
+              name={agentName}
+              info={agents[agentName]}
+              index={index}
+              total={activeTerminals.length}
+              onClose={() => closeTerminal(agentName)}
+            />
+          ))}
+          {showMusic && <MusicPlayer onClose={() => setShowMusic(false)} />}
+          {showTV && <TVRemote onClose={() => setShowTV(false)} />}
+          {showAlarms && <AlarmPanel onClose={() => setShowAlarms(false)} />}
         </div>
-
-        {/* Agent Popups - Right Side */}
-        <aside className="agent-panel">
-          <div className="terminal-layer">
-            {activeTerminals.map((agentName, index) => (
-              <AgentTerminal
-                key={agentName}
-                name={agentName}
-                info={agents[agentName]}
-                index={index}
-                total={activeTerminals.length}
-                onClose={() => closeTerminal(agentName)}
-              />
-            ))}
-            {showMusic && <MusicPlayer onClose={() => setShowMusic(false)} />}
-            {showTV && <TVRemote onClose={() => setShowTV(false)} />}
-            {showAlarms && <AlarmPanel onClose={() => setShowAlarms(false)} />}
-          </div>
-        </aside>
       </div>
 
       {/* JARVIS Output - Above Command */}

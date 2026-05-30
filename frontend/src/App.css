@@ -2803,3 +2803,37 @@ body {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ── Workspace with Arc Watermark ───────────── */
+.jarvis-workspace {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Arc Reactor as watermark - behind content */
+.jarvis-workspace > div:first-child {
+  position: absolute;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* Content layer - centered on top of Arc */
+.workspace-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 90%;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+/* Remove old agent-panel styles */
+.agent-panel { display: none; }
+.center-stage { display: none; }
