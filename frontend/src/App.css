@@ -2300,3 +2300,338 @@ body {
   background: #00d4ff;
   cursor: pointer;
 }
+
+/* ── JARVIS Workspace - Clean Layout ─────────────────── */
+.jarvis-workspace {
+  flex: 1;
+  display: flex;
+  gap: 0;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.jarvis-workspace .center-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+  padding: 20px;
+}
+
+.jarvis-workspace .panel-right {
+  width: 380px;
+  flex-shrink: 0;
+}
+
+/* ── Music Player Panel ─────────────────── */
+.music-player-panel {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: rgba(5, 15, 30, 0.95);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.music-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(90deg, rgba(0, 212, 255, 0.1), transparent);
+  border-bottom: 1px solid var(--border);
+}
+
+.music-icon { font-size: 20px; }
+
+.music-panel-title {
+  flex: 1;
+  font-family: var(--font-hud);
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: var(--primary);
+}
+
+.music-panel-close {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.music-panel-close:hover {
+  background: rgba(255, 51, 102, 0.2);
+  border-color: #ff3366;
+  color: #ff3366;
+}
+
+/* Now Playing Mini */
+.now-playing-mini {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(0, 212, 255, 0.05);
+  border-bottom: 1px solid var(--border);
+}
+
+.now-playing-thumb {
+  width: 48px;
+  height: 36px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.now-playing-info { flex: 1; overflow: hidden; }
+
+.now-playing-title {
+  font-size: 13px;
+  color: var(--text-bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.now-playing-artist {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* Controls */
+.music-panel-controls {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ctrl-btn-sm {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  background: rgba(0, 212, 255, 0.1);
+  border-radius: 50%;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ctrl-btn-sm:hover { background: rgba(0, 212, 255, 0.2); border-color: var(--primary); }
+.ctrl-btn-sm.active { background: rgba(0, 212, 255, 0.3); border-color: var(--primary); color: var(--primary); }
+
+.ctrl-btn-play {
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--primary);
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 212, 255, 0.1));
+  border-radius: 50%;
+  color: var(--primary);
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ctrl-btn-play:hover:not(:disabled) { background: rgba(0, 212, 255, 0.3); transform: scale(1.05); }
+.ctrl-btn-play:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Progress */
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.time-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  min-width: 32px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.progress-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
+}
+
+/* Volume */
+.volume-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.volume-icon { font-size: 14px; }
+
+.volume-bar {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.volume-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+}
+
+/* Search */
+.music-search-bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.music-search-bar input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.music-search-bar input:focus { border-color: var(--primary); outline: none; }
+
+.music-search-bar button {
+  padding: 8px 12px;
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+/* Playlist */
+.music-playlist {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.music-playlist::-webkit-scrollbar { width: 4px; }
+.music-playlist::-webkit-scrollbar-track { background: transparent; }
+.music-playlist::-webkit-scrollbar-thumb { background: var(--border-active); border-radius: 2px; }
+
+.track-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 4px;
+  position: relative;
+}
+
+.track-row:hover { background: rgba(0, 212, 255, 0.05); }
+.track-row.active { background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.2); }
+
+.track-num {
+  width: 20px;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.track-thumb {
+  width: 44px;
+  height: 32px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.track-info { flex: 1; overflow: hidden; }
+
+.track-title {
+  font-size: 12px;
+  color: var(--text-bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-artist {
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-dur {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+.playing-indicator {
+  color: var(--primary);
+  font-size: 10px;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ── Voice Assistant Compact ────────────── */
+.voice-assistant-container {
+  padding: 6px 12px !important;
+  gap: 8px !important;
+}
+
+.voice-mic-btn {
+  width: 42px !important;
+  height: 42px !important;
+}
+
+.voice-activity-viz { display: none !important; }
+.voice-mute-toggle { display: none !important; }
