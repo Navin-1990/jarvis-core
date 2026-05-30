@@ -5,11 +5,10 @@ const LogStream = memo(({ logs }) => {
     <div className="log-stream">
       <div className="log-stream-header">SYSTEM LOG STREAM</div>
       {logs.slice(0, 50).map((log) => (
-        <div key={log.id} className="stream-line">
-          <span className="s-time">{log.time}</span>
-          <span className={`s-tag ${log.type}`}>{log.type}</span>
-          {log.agent && <span className="s-agent">[{log.agent}]</span>}
-          <span className="s-msg">{log.message}</span>
+        <div key={log.id} className="log-entry">
+          <span className="log-time">{log.time}</span>
+          <span className={`log-type ${log.type}`}>{log.type}</span>
+          <span className={`log-message ${log.type}`}>{log.message}</span>
         </div>
       ))}
     </div>
