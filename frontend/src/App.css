@@ -122,11 +122,84 @@ body {
   flex: 1;
   display: flex;
   justify-content: center;
+  gap: 20px;
 }
 
 .header-right {
   display: flex;
   align-items: center;
+  gap: 16px;
+}
+
+/* Weather Widget Container with Time */
+.weather-widget-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.time-display {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.time-greeting {
+  font-family: var(--font-hud);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--secondary);
+  text-transform: uppercase;
+}
+
+.time-value {
+  font-family: var(--font-hud);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-bright);
+  letter-spacing: 2px;
+}
+
+.date-value {
+  font-family: var(--font-body);
+  font-size: 10px;
+  color: var(--primary-dim);
+  letter-spacing: 1px;
+}
+
+.weather-widget {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 20px;
+}
+
+.weather-icon {
+  font-size: 18px;
+}
+
+.weather-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.weather-city {
+  font-family: var(--font-hud);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--primary-dim);
+}
+
+.weather-temp {
+  font-family: var(--font-hud);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-bright);
 }
 
 .neural-link {

@@ -13,12 +13,6 @@ class LocalLLM:
         self.timeout = settings.OLLAMA_TIMEOUT
 
     def ask(self, prompt):
-
-        print("\n")
-        print("=" * 60)
-        print("[JARVIS] Sending request to Llama")
-        print("=" * 60)
-
         start_time = time.time()
 
         payload = {
@@ -32,18 +26,22 @@ class LocalLLM:
             "stream": False
         }
 
-        response = requests.post(
-            self.url,
-            json=payload,
-            timeout=self.timeout
-        )
-
-        response.raise_for_status()
-
-        data = response.json()
-
-        elapsed = time.time() - start_time
-
-        print(f"[JARVIS] Response received in {elapsed:.2f} seconds")
-
-        return data["message"]["content"]
+        try:
+            response = requests.post(
+                self.url,
+                json=payload,
+                timeout=self.timeout
+            )
+            response.raise_for_status()
+            data = response.json()
+            elapsed = time.time() - start_time
+            
+            if elapsed > 5:
+                print(f"[JARVIS] Response in {elapsed:.1f}s")
+            
+            return data["message"]["content"]
+        except requests.exceptions.Timeout:
+            return "I apologize, sir. The request took too long. Please try a simpler command."
+        except Exception as e:
+            print(f"[JARVIS] LLM Error: {e}")
+            return "I apologize, sir. I'm experiencing technical difficulties. Please try again."
