@@ -2635,3 +2635,52 @@ body {
 
 .voice-activity-viz { display: none !important; }
 .voice-mute-toggle { display: none !important; }
+
+/* ── Simplified Layout ─────────────────────── */
+.jarvis-workspace {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.center-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.jarvis-output-bar {
+  padding: 10px 24px;
+  background: rgba(0, 10, 25, 0.9);
+  border-top: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.jarvis-output-bar .output-text {
+  font-size: 14px;
+  color: #e0f0ff;
+  text-align: center;
+}
+
+.header-right .voice-mute-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 20px;
+  color: #00d4ff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.header-right .voice-mute-btn:hover { background: rgba(0, 212, 255, 0.2); }
+.header-right .voice-mute-btn.muted {
+  background: rgba(255, 51, 102, 0.2);
+  border-color: rgba(255, 51, 102, 0.5);
+  color: #ff6688;
+}
+
+.mute-icon { font-size: 16px; }
+.mute-label { font-size: 10px; font-weight: 600; }

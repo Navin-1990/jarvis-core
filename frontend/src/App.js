@@ -310,16 +310,24 @@ function App() {
           <WeatherWidget />
         </div>
         <div className="header-right">
-          {/* Voice - Mic button only */}
+          {/* Voice - Mic + Mute */}
           <VoiceAssistant 
             onCommand={handleVoiceCommand}
             onSpeakingStateChange={handleSpeakingChange}
             apiUrl={API_URL}
             disabled={voiceMuted}
           />
+          <button
+            className={`voice-mute-btn ${voiceMuted ? 'muted' : ''}`}
+            onClick={toggleVoiceMute}
+            title={voiceMuted ? '🔇 Speaker Muted' : '🔊 Speaker Enabled'}
+          >
+            <span className="mute-icon">{voiceMuted ? '🔇' : '🔊'}</span>
+            <span className="mute-label">{voiceMuted ? 'MUTED' : 'SPEAK'}</span>
+          </button>
           <div className={`neural-link ${connected ? 'active' : ''}`}>
             <div className="link-pulse" />
-            <span>{connected ? 'LINK ACTIVE' : 'LINK OFFLINE'}</span>
+            <span>{connected ? 'LINK' : 'OFF'}</span>
           </div>
         </div>
       </header>
@@ -366,50 +374,23 @@ function App() {
         </div>
       </div>
 
-      {/* Main workspace - Clean Layout */}
+      {/* Main workspace - Arc Center */}
       <div className="jarvis-workspace">
-        {/* Center - Arc Reactor + Command */}
         <div className="center-stage">
-          <div className="arc-reactor-container">
-            <HolographicHUD 
-              processing={processing} 
-              speaking={isSpeaking}
-              listening={voiceState === 'listening'}
-              size={260}
-            />
-            
-            <div className="response-hologram">
-              <div className="hologram-border top-left" />
-              <div className="hologram-border top-right" />
-              <div className="hologram-border bottom-left" />
-              <div className="hologram-border bottom-right" />
-              <div className="response-label">JARVIS OUTPUT</div>
-              <div className="response-text">
-                {response || 'Systems nominal. Awaiting your command, sir.'}
-              </div>
-            </div>
-          </div>
+          <HolographicHUD 
+            processing={processing} 
+            speaking={isSpeaking}
+            listening={voiceState === 'listening'}
+            size={260}
+          />
         </div>
+      </div>
 
-        {/* Right Panel - Agent Terminals + Music */}
-        <aside className="panel-right">
-          <div className="panel-header-compact">CONTROLS</div>
-          <div className="terminal-layer">
-            {activeTerminals.map((agentName, index) => (
-              <AgentTerminal
-                key={agentName}
-                name={agentName}
-                info={agents[agentName]}
-                index={index}
-                total={activeTerminals.length}
-                onClose={() => closeTerminal(agentName)}
-              />
-            ))}
-            {showMusic && <MusicPlayer onClose={() => setShowMusic(false)} />}
-            {showTV && <TVRemote onClose={() => setShowTV(false)} />}
-            {showAlarms && <AlarmPanel onClose={() => setShowAlarms(false)} />}
-          </div>
-        </aside>
+      {/* JARVIS Output - Simple footer */}
+      <div className="jarvis-output-bar">
+        <div className="output-text">
+          {response || 'Systems nominal. Awaiting your command, sir.'}
+        </div>
       </div>
 
       {/* Command input - bottom */}
