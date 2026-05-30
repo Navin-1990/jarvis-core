@@ -313,14 +313,7 @@ function App() {
           <SystemArc status={systemStatus} connected={connected} />
         </div>
         <div className="header-right">
-          {/* Voice Assistant - mic button for voice input */}
-          <VoiceAssistant 
-            onCommand={handleVoiceCommand}
-            onSpeakingStateChange={handleSpeakingChange}
-            apiUrl={API_URL}
-            disabled={voiceMuted}
-          />
-          {/* Single mute button */}
+          {/* Single mute button only - mic functionality handled in CommandOrb */}
           <button
             className={`voice-mute-btn ${voiceMuted ? 'muted' : ''}`}
             onClick={toggleVoiceMute}
