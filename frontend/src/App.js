@@ -310,22 +310,13 @@ function App() {
           <WeatherWidget />
         </div>
         <div className="header-right">
-          {/* Voice - Mic button */}
+          {/* Voice - Mic button only */}
           <VoiceAssistant 
             onCommand={handleVoiceCommand}
             onSpeakingStateChange={handleSpeakingChange}
             apiUrl={API_URL}
             disabled={voiceMuted}
           />
-          {/* Mute toggle */}
-          <button
-            className={`voice-mute-btn ${voiceMuted ? 'muted' : ''}`}
-            onClick={toggleVoiceMute}
-            title={voiceMuted ? '🔇 Speaker Muted' : '🔊 Speaker Enabled'}
-          >
-            <span className="mute-icon">{voiceMuted ? '🔇' : '🔊'}</span>
-            <span className="mute-label">{voiceMuted ? 'MUTED' : 'SPEAK'}</span>
-          </button>
           <div className={`neural-link ${connected ? 'active' : ''}`}>
             <div className="link-pulse" />
             <span>{connected ? 'LINK ACTIVE' : 'LINK OFFLINE'}</span>
@@ -375,22 +366,16 @@ function App() {
         </div>
       </div>
 
-      {/* Main workspace - Grid Layout */}
-      <div className="jarvis-grid">
-        {/* Left Panel - System Logs */}
-        <aside className="panel-left">
-          <div className="panel-header-compact">SYSTEM LOGS</div>
-          <LogStream logs={logs} />
-        </aside>
-
-        {/* Center - Arc Reactor */}
+      {/* Main workspace - Clean Layout */}
+      <div className="jarvis-workspace">
+        {/* Center - Arc Reactor + Command */}
         <div className="center-stage">
           <div className="arc-reactor-container">
             <HolographicHUD 
               processing={processing} 
               speaking={isSpeaking}
               listening={voiceState === 'listening'}
-              size={280}
+              size={260}
             />
             
             <div className="response-hologram">
@@ -406,9 +391,9 @@ function App() {
           </div>
         </div>
 
-        {/* Right Panel - Agent Terminals */}
+        {/* Right Panel - Agent Terminals + Music */}
         <aside className="panel-right">
-          <div className="panel-header-compact">AGENTS</div>
+          <div className="panel-header-compact">CONTROLS</div>
           <div className="terminal-layer">
             {activeTerminals.map((agentName, index) => (
               <AgentTerminal
