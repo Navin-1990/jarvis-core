@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
@@ -7,20 +7,10 @@ const MusicPlayer = ({ onClose }) => {
   const [results, setResults] = useState([]);
   const [nowPlaying, setNowPlaying] = useState(null);
   const [searching, setSearching] = useState(false);
-
-  const fetchNowPlaying = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_URL}/music/now-playing`);
-      const data = await res.json();
-      setNowPlaying(data.track);
-    } catch { /* ignore */ }
-  }, []);
-
-  useEffect(() => {
-    fetchNowPlaying();
-    const interval = setInterval(fetchNowPlaying, 5000);
-    return () => clearInterval(interval);
-  }, [fetchNowPlaying]);
+  const [loading, setLoading] = useState(false);
+  const [currentPlaylist, setCurrentPlaylist] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(-1);
+  const audioRef = useRef(null);
 
   const search = async () => {
     if (!query.trim()) return;
@@ -32,78 +22,150 @@ const MusicPlayer = ({ onClose }) => {
         body: JSON.stringify({ query: query.trim() }),
       });
       const data = await res.json();
-      setResults(data.results || []);
-    } catch { /* ignore */ }
+      if (data.results && data.results.length > 0) {
+        setResults(data.results);
+        setCurrentPlaylist(data.results);
+        setCurrentIndex(-1);
+      } else {
+        setResults([]);
+        setCurrentPlaylist([]);
+      }
+    } catch (e) {
+      console.error('Search error:', e);
+    }
     setSearching(false);
   };
 
-  const play = async (item) => {
+  const playSong = async (item, index) => {
+    setLoading(true);
     try {
-      await fetch(`${API_URL}/music/play`, {
+      const res = await fetch(`${API_URL}/music/play`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ video_id: item.video_id, title: item.title }),
       });
-      setNowPlaying({ title: item.title, status: 'playing', video_id: item.video_id });
-    } catch { /* ignore */ }
+      const data = await res.json();
+      
+      if (data.success && data.track) {
+        setNowPlaying({ ...item, ...data.track });
+        setCurrentIndex(index);
+        
+        // Try to play audio in browser if URL available
+        if (data.track.audio_url && audioRef.current) {
+          audioRef.current.src = data.track.audio_url;
+          audioRef.current.play().catch(() => {});
+        }
+      }
+    } catch (e) {
+      console.error('Play error:', e);
+    }
+    setLoading(false);
   };
 
-  const control = async (action) => {
+  const playNext = () => {
+    if (currentIndex < currentPlaylist.length - 1) {
+      playSong(currentPlaylist[currentIndex + 1], currentIndex + 1);
+    }
+  };
+
+  const playPrev = () => {
+    if (currentIndex > 0) {
+      playSong(currentPlaylist[currentIndex - 1], currentIndex - 1);
+    }
+  };
+
+  const stop = async () => {
     try {
-      await fetch(`${API_URL}/music/${action}`, { method: 'POST' });
-      if (action === 'stop') setNowPlaying(null);
-      else if (action === 'pause' && nowPlaying) setNowPlaying({ ...nowPlaying, status: 'paused' });
-      else if (action === 'resume' && nowPlaying) setNowPlaying({ ...nowPlaying, status: 'playing' });
-    } catch { /* ignore */ }
+      await fetch(`${API_URL}/music/stop`, { method: 'POST' });
+    } catch {}
+    setNowPlaying(null);
+    setCurrentIndex(-1);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      search();
+    }
   };
 
   return (
-    <div className="panel-card music-panel">
-      <div className="panel-header">
-        <span className="panel-icon">&#9835;</span>
-        <span className="panel-title">MUSIC PLAYER</span>
-        <button className="terminal-close" onClick={onClose}>x</button>
+    <div className="music-player-panel">
+      <audio ref={audioRef} />
+      
+      {/* Header */}
+      <div className="music-header">
+        <span className="music-icon">🎵</span>
+        <span className="music-title">MUSIC PLAYER</span>
+        <button className="music-close" onClick={onClose}>×</button>
       </div>
-      <div className="panel-body">
-        {nowPlaying && (
-          <div className="now-playing">
-            <div className="np-label">NOW PLAYING</div>
-            <div className="np-title">{nowPlaying.title}</div>
-            <div className="np-controls">
-              {nowPlaying.status === 'playing' ? (
-                <button className="ctrl-btn" onClick={() => control('pause')}>&#10074;&#10074;</button>
-              ) : (
-                <button className="ctrl-btn" onClick={() => control('resume')}>&#9654;</button>
-              )}
-              <button className="ctrl-btn danger" onClick={() => control('stop')}>&#9632;</button>
+      
+      {/* Now Playing */}
+      {nowPlaying && (
+        <div className="now-playing-section">
+          <div className="now-playing-thumb">
+            {nowPlaying.thumbnail && (
+              <img src={nowPlaying.thumbnail} alt="" />
+            )}
+          </div>
+          <div className="now-playing-info">
+            <div className="now-playing-label">NOW PLAYING</div>
+            <div className="now-playing-name">{nowPlaying.title}</div>
+            <div className="now-playing-channel">{nowPlaying.channel}</div>
+            <div className="now-playing-controls">
+              <button onClick={playPrev} disabled={currentIndex <= 0}>⏮</button>
+              <button onClick={stop} className="stop-btn">⏹</button>
+              <button onClick={playNext} disabled={currentIndex >= currentPlaylist.length - 1}>⏭</button>
             </div>
           </div>
-        )}
-        <form className="music-search" onSubmit={(e) => { e.preventDefault(); search(); }}>
-          <input
-            className="music-input"
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search music..."
-          />
-          <button className="music-search-btn" type="submit" disabled={searching}>
-            {searching ? '...' : 'SEARCH'}
-          </button>
-        </form>
-        <div className="music-results">
-          {results.map((item) => (
-            <div key={item.video_id} className="music-item" onClick={() => play(item)}>
-              <img src={item.thumbnail} alt="" className="music-thumb" />
-              <div className="music-info">
-                <div className="music-item-title">{item.title}</div>
-                <div className="music-channel">{item.channel}</div>
-              </div>
-              <button className="play-btn">&#9654;</button>
-            </div>
-          ))}
         </div>
+      )}
+      
+      {/* Search */}
+      <div className="music-search-bar">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Search songs (e.g., Alan Walker)"
+        />
+        <button onClick={search} disabled={searching}>
+          {searching ? '...' : '🔍'}
+        </button>
       </div>
+      
+      {/* Playlist */}
+      <div className="music-playlist">
+        {results.length === 0 && !searching && (
+          <div className="music-empty">
+            <div className="empty-icon">🎶</div>
+            <div>Search for songs to play</div>
+            <div className="empty-hint">Try "Alan Walker" or "Imagine Dragons"</div>
+          </div>
+        )}
+        {results.map((item, index) => (
+          <div 
+            key={item.video_id} 
+            className={`music-track ${currentIndex === index ? 'active' : ''}`}
+            onClick={() => playSong(item, index)}
+          >
+            <div className="track-num">{index + 1}</div>
+            <img src={item.thumbnail} alt="" className="track-thumb" />
+            <div className="track-info">
+              <div className="track-name">{item.title}</div>
+              <div className="track-artist">{item.channel}</div>
+            </div>
+            <div className="track-play">▶</div>
+          </div>
+        ))}
+      </div>
+      
+      {loading && <div className="music-loading">Loading...</div>}
     </div>
   );
 };
