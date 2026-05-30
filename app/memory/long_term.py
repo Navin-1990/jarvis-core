@@ -78,6 +78,18 @@ def complete_reminder(reminder_id: int) -> bool:
     return True
 
 
+def advance_reminder(reminder_id: int, new_due_at: datetime) -> bool:
+    """Advance a recurring reminder to the next occurrence."""
+    conn = get_connection()
+    conn.execute(
+        "UPDATE reminders SET due_at = ? WHERE id = ?",
+        (new_due_at.isoformat(), reminder_id),
+    )
+    conn.commit()
+    conn.close()
+    return True
+
+
 def delete_reminder(reminder_id: int) -> bool:
     conn = get_connection()
     conn.execute("DELETE FROM reminders WHERE id = ?", (reminder_id,))
